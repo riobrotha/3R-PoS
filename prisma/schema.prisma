@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  CASHIER
+}
+
+model User {
+  id           Int      @id @default(autoincrement()) @map("id")
+  name         String   @map("name")
+  email        String   @unique @map("email")
+  password     String   @map("password")
+  role         UserRole @default(CASHIER) @map("role")
+  refreshToken String?  @map("refresh_token") @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  transactions Transaction[]
+
+  createdCategories Category[] @relation("CategoryCreatedBy")
+  updatedCategories Category[] @relation("CategoryUpdatedBy")
+  deletedCategories Category[] @relation("CategoryDeletedBy")
+
+  createdProducts Product[] @relation("ProductCreatedBy")
+  updatedProducts Product[] @relation("ProductUpdatedBy")
+  deletedProducts Product[] @relation("ProductDeletedBy")
+
+  createdTransactions Transaction[] @relation("TransactionCreatedBy")
+  updatedTransactions Transaction[] @relation("TransactionUpdatedBy")
+  deletedTransactions Transaction[] @relation("TransactionDeletedBy")
+
+  createdTransactionDetails TransactionItem[] @relation("TransactionDetailCreatedBy")
+  updatedTransactionDetails TransactionItem[] @relation("TransactionDetailUpdatedBy")
+  deletedTransactionDetails TransactionItem[] @relation("TransactionDetailDeletedBy")
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Category {
+  id          Int     @id @default(autoincrement()) @map("id")
+  name        String  @unique @map("name")
+  description String? @map("description")
+  isActive    Boolean @default(true) @map("is_active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdBy Int? @map("created_by")
+  updatedBy Int? @map("updated_by")
+  deletedBy Int? @map("deleted_by")
+
+  creator User? @relation("CategoryCreatedBy", fields: [createdBy], references: [id])
+  updater User? @relation("CategoryUpdatedBy", fields: [updatedBy], references: [id])
+  deleter User? @relation("CategoryDeletedBy", fields: [deletedBy], references: [id])
+
+  products Product[]
+
+  @@index([deletedAt])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model Product {
+  id         Int     @id @default(autoincrement()) @map("id")
+  name       String  @map("name")
+  sku        String? @unique @map("sku")
+  price      Decimal @map("price") @db.Decimal(18, 2)
+  stock      Int     @map("stock")
+  isActive   Boolean @default(true) @map("is_active")
+  categoryId Int     @map("category_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdBy Int? @map("created_by")
+  updatedBy Int? @map("updated_by")
+  deletedBy Int? @map("deleted_by")
+
+  category Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  items    TransactionItem[]
+
+  creator User? @relation("ProductCreatedBy", fields: [createdBy], references: [id])
+  updater User? @relation("ProductUpdatedBy", fields: [updatedBy], references: [id])
+  deleter User? @relation("ProductDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([name])
+  @@index([stock])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("products")
+}
+
+model Transaction {
+  id        Int     @id @default(autoincrement()) @map("id")
+  invoiceNo String  @unique @map("invoice_no")
+  total     Decimal @map("total") @db.Decimal(18, 2)
+  userId    Int     @map("user_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdBy Int? @map("created_by")
+  updatedBy Int? @map("updated_by")
+  deletedBy Int? @map("deleted_by")
+
+  user  User              @relation(fields: [userId], references: [id])
+  items TransactionItem[]
+
+  creator User? @relation("TransactionCreatedBy", fields: [createdBy], references: [id])
+  updater User? @relation("TransactionUpdatedBy", fields: [updatedBy], references: [id])
+  deleter User? @relation("TransactionDeletedBy", fields: [deletedBy], references: [id])
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@index([deletedAt])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            Int     @id @default(autoincrement()) @map("id")
+  transactionId Int     @map("transaction_id")
+  productId     Int     @map("product_id")
+  qty           Int     @map("qty")
+  price         Decimal @map("price") @db.Decimal(18, 2)
+  subTotal      Decimal @map("sub_total") @db.Decimal(18, 2)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdBy Int? @map("created_by")
+  updatedBy Int? @map("updated_by")
+  deletedBy Int? @map("deleted_by")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  creator User? @relation("TransactionDetailCreatedBy", fields: [createdBy], references: [id])
+  updater User? @relation("TransactionDetailUpdatedBy", fields: [updatedBy], references: [id])
+  deleter User? @relation("TransactionDetailDeletedBy", fields: [deletedBy], references: [id])
+
+  @@unique([transactionId, productId])
+  @@index([transactionId])
+  @@index([productId])
+  @@index([deletedAt])
+  @@map("transaction_items")
+}
