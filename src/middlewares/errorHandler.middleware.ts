@@ -33,8 +33,8 @@ export const errorHandler = (
 
   return response.error(
     res,
-    err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
     err.message || "Internal Server Error",
+    err.statusCode || StatusCodes.INTERNAL_SERVER_ERROR,
     err.error,
   );
 };

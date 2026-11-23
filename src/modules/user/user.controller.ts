@@ -41,9 +41,7 @@ export default {
     async (req: RefreshTokenRequest, res: Response, next: NextFunction) => {
       const userId = req.user?.id;
       const refreshToken = req.user?.refreshToken;
-
-      console.log(req.user);
-
+      
       if (!userId) {
         return response.error(
           res,

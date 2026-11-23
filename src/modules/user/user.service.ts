@@ -19,7 +19,7 @@ export default {
     const user = await userRepository.create({
       ...data,
       password: hashedPassword,
-      role: data.role || UserRole.CASHIER,
+      role: UserRole.CASHIER,
     });
 
     const { password, id, ...safeUser } = user;
